@@ -1,0 +1,39 @@
+html, body {
+	margin: 0;
+	padding: 0;
+}
+
+* { box-sizing: border-box }
+
+.game {
+	position: relative;
+	height: 80vh;
+	width: 600px;
+	background-color: #222;
+}
+
+.tile {
+	position: absolute;
+	height: 5%;
+	width: 5%;
+}
+
+.hero {
+	background-color: white;
+	border: solid 10px #093;
+}
+
+.carton {
+	background-color: #C00;
+}
+
+.target {
+	border: dashed 3px #F93;
+	border-style: border-box;
+}
+
+.wall {
+	background-color: #339;
+	border: solid 1px grey;
+}
+
