@@ -1,13 +1,18 @@
 "use strict";
 
 (function () {
-	var TILE_CSS = {
-		"H": "hero",
-		"O": "carton",
-		".": "target",
-		"X": "wall",
-		" ": ""
-	};
+	var TILE_HERO = "H";
+	var TILE_CARTON = "O";
+	var TILE_TARGET = ".";
+	var TILE_WALL = "X";
+	var TILE_NIL = " ";
+
+	var TILE_CSS = {};
+	TILE_CSS[TILE_HERO] = "hero";
+	TILE_CSS[TILE_CARTON] = "carton";
+	TILE_CSS[TILE_TARGET] = "target";
+	TILE_CSS[TILE_WALL] = "wall";
+	TILE_CSS[TILE_NIL] = "";
 
 	var _getBoardDim = function(level) {
     	var levelRows = level.split("\n");
@@ -30,7 +35,7 @@
     	var levelRows = level.split("\n");
         for (rowIndex = levelRows.length - 1; rowIndex >= 0; rowIndex--) {
         	levelRow = levelRows[rowIndex];
-        	colIndex = levelRow.indexOf("H");
+        	colIndex = levelRow.indexOf(TILE_HERO);
         	if (colIndex >= 0) {
         		return {x:colIndex, y:rowIndex};
         	}
@@ -70,22 +75,25 @@
     	var heroPosition = _getHeroPosition(level);
     	var newHeroPosition = _newPosition(heroPosition, direction);
     	var initialChar = _getLevelChar(initialLevel, heroPosition);
-    	if (initialChar !== ".") {
-    		initialChar = " ";
+    	if (initialChar !== TILE_TARGET) {
+    		initialChar = TILE_NIL;
     	}
     	result = _setLevelChar(result, heroPosition, initialChar);
-    	result = _setLevelChar(result, newHeroPosition, "H");
+    	result = _setLevelChar(result, newHeroPosition, TILE_HERO);
 		return result;
     };
 
     var _checkMove = function(level, direction) {
+    	var newHeroDest = undefined;
     	var heroPosition = _getHeroPosition(level);
     	var boardDim = _getBoardDim(level);
-    	console.log(boardDim);
     	var newHeroPosition = _newPosition(heroPosition, direction);
     	if (newHeroPosition.x === -1 || newHeroPosition.x === boardDim.x
     		|| newHeroPosition.y === -1 || newHeroPosition.y === boardDim.y) {
-    		console.log("impossible to move here");
+    		return false;
+    	}
+    	newHeroDest = _getLevelChar(level, newHeroPosition);
+    	if (newHeroDest === TILE_WALL) {
     		return false;
     	}
     	return true;
