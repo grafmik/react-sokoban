@@ -56,11 +56,24 @@
     	return result;
     };
 
-    var _move = function(level, direction) {
+    var _getLevelChar = function(level, position) {
+    	var result = undefined;
+    	var levelRows = level.split("\n");
+    	var levelRow = levelRows[position.y];
+    	var levelRowArray = levelRow.split("");
+    	result = levelRowArray[position.x];
+    	return result;
+    };
+
+    var _move = function(initialLevel, level, direction) {
     	var result = level;
     	var heroPosition = _getHeroPosition(level);
     	var newHeroPosition = _newPosition(heroPosition, direction);
-    	result = _setLevelChar(result, heroPosition, " ");
+    	var initialChar = _getLevelChar(initialLevel, heroPosition);
+    	if (initialChar !== ".") {
+    		initialChar = " ";
+    	}
+    	result = _setLevelChar(result, heroPosition, initialChar);
     	result = _setLevelChar(result, newHeroPosition, "H");
 		return result;
     };
@@ -75,7 +88,6 @@
     		console.log("impossible to move here");
     		return false;
     	}
-		console.log("moving");
     	return true;
     };
 
@@ -94,7 +106,7 @@
 			if (direction !== undefined) {
 				e.preventDefault();
 				if (_checkMove(this.state.currentLevel, direction)) {
-					newLevel = _move(this.state.currentLevel, direction);
+					newLevel = _move(this.state.initialLevel, this.state.currentLevel, direction);
 		    		if (newLevel !== undefined) {
 						this.setState({currentLevel: newLevel}, function()  {
 							console.log("state changed");
