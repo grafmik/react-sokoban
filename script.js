@@ -2,14 +2,18 @@
 
 (function () {
 	var TILE_HERO = "H";
+	var TILE_HERO_TARGET = "I";
 	var TILE_CARTON = "O";
+	var TILE_CARTON_TARGET = "P";
 	var TILE_TARGET = ".";
 	var TILE_WALL = "X";
 	var TILE_NIL = " ";
 
 	var TILE_CSS = {};
 	TILE_CSS[TILE_HERO] = "hero";
+	TILE_CSS[TILE_HERO_TARGET] = "hero-target";
 	TILE_CSS[TILE_CARTON] = "carton";
+	TILE_CSS[TILE_CARTON_TARGET] = "carton-target";
 	TILE_CSS[TILE_TARGET] = "target";
 	TILE_CSS[TILE_WALL] = "wall";
 	TILE_CSS[TILE_NIL] = "";
@@ -35,7 +39,7 @@
     	var levelRows = level.split("\n");
         for (rowIndex = levelRows.length - 1; rowIndex >= 0; rowIndex--) {
         	levelRow = levelRows[rowIndex];
-        	colIndex = levelRow.indexOf(TILE_HERO);
+        	colIndex = Math.max(levelRow.indexOf(TILE_HERO), levelRow.indexOf(TILE_HERO_TARGET));
         	if (colIndex >= 0) {
         		return {x:colIndex, y:rowIndex};
         	}
@@ -67,6 +71,12 @@
     	return result;
     };
 
+    var _isTargetChar = function(chr) {
+    	return chr === TILE_TARGET
+    	|| chr === TILE_CARTON_TARGET
+    	|| chr === TILE_HERO_TARGET;
+    }
+
     var _getLevelChar = function(level, position) {
     	var result = undefined;
     	var levelRows = level.split("\n");
@@ -77,21 +87,38 @@
     };
 
     var _move = function(initialLevel, level, direction) {
-    	var newHeroDest = undefined, newCartonPosition = undefined, initialChar = undefined;
+    	var initialChar = undefined, newInitialChar = undefined,
+    	heroDest = undefined, newHeroDest = undefined, initialNewHeroDest = undefined,
+    	newCartonPosition = undefined, newCartonDest = undefined,
+    	initialNewCartonDest = undefined;
     	var result = level;
     	var heroPosition = _getHeroPosition(level);
     	var newHeroPosition = _newPosition(heroPosition, direction);
-    	newHeroDest = _getLevelChar(level, newHeroPosition);
-    	if (newHeroDest === TILE_CARTON) {
+    	heroDest = _getLevelChar(level, newHeroPosition);
+    	if (heroDest === TILE_CARTON || heroDest === TILE_CARTON_TARGET) {
     		newCartonPosition = _newPosition(newHeroPosition, direction);
-	    	result = _setLevelChar(result, newCartonPosition, TILE_CARTON);
+	    	initialNewCartonDest = _getLevelChar(initialLevel, newCartonPosition);
+	    	if (_isTargetChar(initialNewCartonDest)) {
+	    		newCartonDest = TILE_CARTON_TARGET;
+	    	} else {
+	    		newCartonDest = TILE_CARTON;
+	    	}
+	    	result = _setLevelChar(result, newCartonPosition, newCartonDest);
     	}
     	initialChar = _getLevelChar(initialLevel, heroPosition);
-    	if (initialChar !== TILE_TARGET) {
-    		initialChar = TILE_NIL;
+    	if (_isTargetChar(initialChar)) {
+    		newInitialChar = TILE_TARGET;
+    	} else {
+    		newInitialChar = TILE_NIL;
     	}
-    	result = _setLevelChar(result, heroPosition, initialChar);
-    	result = _setLevelChar(result, newHeroPosition, TILE_HERO);
+    	result = _setLevelChar(result, heroPosition, newInitialChar);
+    	initialNewHeroDest = _getLevelChar(initialLevel, newHeroPosition);
+    	if (_isTargetChar(initialNewHeroDest)) {
+    		newHeroDest = TILE_HERO_TARGET;
+    	} else {
+    		newHeroDest = TILE_HERO;
+    	}
+    	result = _setLevelChar(result, newHeroPosition, newHeroDest);    		
 		return result;
     };
 
@@ -105,13 +132,14 @@
     	newHeroDest = _getLevelChar(level, newHeroPosition);
     	if (newHeroDest === TILE_WALL) {
     		return false;
-    	} else if (newHeroDest === TILE_CARTON) {
+    	} else if (newHeroDest === TILE_CARTON || newHeroDest === TILE_CARTON_TARGET) {
     		newCartonPosition = _newPosition(newHeroPosition, direction);
 	    	if (_isOutOfBounds(level, newCartonPosition)) {
 	    		return false;
 	    	}
     		newCartonDest = _getLevelChar(level, newCartonPosition);
-    		if (newCartonDest === TILE_WALL || newCartonDest === TILE_CARTON) {
+    		if (newCartonDest === TILE_WALL || newCartonDest === TILE_CARTON
+    			|| newCartonDest === TILE_CARTON_TARGET) {
     			return false;
     		}
     	}
@@ -191,7 +219,7 @@
 	    "XXX O.X \n" +
 	    "X.XXO X \n" +
 	    "X X . XX\n" +
-	    "XO OOO.X\n" +
+	    "XO OPO.X\n" +
 	    "X   .  X\n" +
 	    "XXXXXXXX\n";
 

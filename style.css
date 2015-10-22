@@ -21,8 +21,17 @@ html, body {
 	border: solid 10px #093;
 }
 
+.hero-target {
+	background-color: #F93;
+	border: solid 8px #062;
+}
+
 .carton {
 	background-color: #C00;
+}
+
+.carton-target {
+	background-color: #F93
 }
 
 .target {
