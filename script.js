@@ -77,10 +77,16 @@
     };
 
     var _move = function(initialLevel, level, direction) {
+    	var newHeroDest = undefined, newCartonPosition = undefined, initialChar = undefined;
     	var result = level;
     	var heroPosition = _getHeroPosition(level);
     	var newHeroPosition = _newPosition(heroPosition, direction);
-    	var initialChar = _getLevelChar(initialLevel, heroPosition);
+    	newHeroDest = _getLevelChar(level, newHeroPosition);
+    	if (newHeroDest === TILE_CARTON) {
+    		newCartonPosition = _newPosition(newHeroPosition, direction);
+	    	result = _setLevelChar(result, newCartonPosition, TILE_CARTON);
+    	}
+    	initialChar = _getLevelChar(initialLevel, heroPosition);
     	if (initialChar !== TILE_TARGET) {
     		initialChar = TILE_NIL;
     	}
