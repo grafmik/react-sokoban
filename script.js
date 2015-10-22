@@ -49,6 +49,12 @@
     	};
     };
 
+    var _isOutOfBounds = function(level, position) {
+    	var boardDim = _getBoardDim(level);
+    	return position.x === -1 || position.x === boardDim.x
+    		|| position.y === -1 || position.y === boardDim.y;
+    };
+
     var _setLevelChar = function(level, position, chr) {
     	var result = level;
     	var levelRows = level.split("\n");
@@ -84,17 +90,24 @@
     };
 
     var _checkMove = function(level, direction) {
-    	var newHeroDest = undefined;
+    	var newHeroDest = undefined, newCartonPosition = undefined, newCartonDest = undefined;
     	var heroPosition = _getHeroPosition(level);
-    	var boardDim = _getBoardDim(level);
     	var newHeroPosition = _newPosition(heroPosition, direction);
-    	if (newHeroPosition.x === -1 || newHeroPosition.x === boardDim.x
-    		|| newHeroPosition.y === -1 || newHeroPosition.y === boardDim.y) {
+    	if (_isOutOfBounds(level, newHeroPosition)) {
     		return false;
     	}
     	newHeroDest = _getLevelChar(level, newHeroPosition);
     	if (newHeroDest === TILE_WALL) {
     		return false;
+    	} else if (newHeroDest === TILE_CARTON) {
+    		newCartonPosition = _newPosition(newHeroPosition, direction);
+	    	if (_isOutOfBounds(level, newCartonPosition)) {
+	    		return false;
+	    	}
+    		newCartonDest = _getLevelChar(level, newCartonPosition);
+    		if (newCartonDest === TILE_WALL || newCartonDest === TILE_CARTON) {
+    			return false;
+    		}
     	}
     	return true;
     };
@@ -117,7 +130,7 @@
 					newLevel = _move(this.state.initialLevel, this.state.currentLevel, direction);
 		    		if (newLevel !== undefined) {
 						this.setState({currentLevel: newLevel}, function()  {
-							console.log("state changed");
+							// state changed
 						}.bind(this));	    			
 		    		}
 				};
