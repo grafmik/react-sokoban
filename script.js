@@ -185,9 +185,15 @@
 	});
 
 	var level = "" +
-	    "XXXXX\n" +
-	    "XHO.X\n" +
-	    "XXXXX";
+	    "  XXXXX \n" +
+	    "XXX   X \n" +
+	    "X.HO  X \n" +
+	    "XXX O.X \n" +
+	    "X.XXO X \n" +
+	    "X X . XX\n" +
+	    "XO OOO.X\n" +
+	    "X   .  X\n" +
+	    "XXXXXXXX\n";
 
 	ReactDOM.render(
 	    React.createElement(Game, {level: level}),
