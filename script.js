@@ -194,11 +194,14 @@
 		},
 	    getInitialState: function() {
 			// impossible level - this should always been overriden by props
-			return {
-				level: "" +
+			var impossibleLevel = "" +
 			    "OX.\n" +
 			    "XHX\n" +
 			    ".XO"
+			return {
+				initialLevel: impossibleLevel,
+				currentLevel: impossibleLevel,
+			    mainMessage: "Hi! Please click on the game first. Then, use IJKL keys to play"
 			};
 	    },
 	    componentWillMount: function() {
