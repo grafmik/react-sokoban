@@ -46,6 +46,19 @@
         }
     };
 
+    var _isLevelFinished = function(level) {
+    	var levelRow = undefined, rowIndex = undefined, colIndex = undefined;
+    	var levelRows = level.split("\n");
+        for (rowIndex = levelRows.length - 1; rowIndex >= 0; rowIndex--) {
+        	levelRow = levelRows[rowIndex];
+        	colIndex = levelRow.indexOf(TILE_CARTON);
+        	if (colIndex >= 0) {
+        		return false;
+        	}
+        }
+        return true;
+    };
+
     var _newPosition = function(origPos, offset) {
     	return {
     		x: origPos.x + offset.x,
@@ -118,7 +131,7 @@
     	} else {
     		newHeroDest = TILE_HERO;
     	}
-    	result = _setLevelChar(result, newHeroPosition, newHeroDest);    		
+    	result = _setLevelChar(result, newHeroPosition, newHeroDest);
 		return result;
     };
 
@@ -158,12 +171,21 @@
 		_onFilterKeyPress: function(e) {
 			var newLevel = undefined;
 			var direction = _directions[e.key];
-			if (direction !== undefined) {
+			var newMessage = undefined;
+			if (direction === undefined) {
+				this.setState({mainMessage: "Keys : IJKL"})
+			} else {
 				e.preventDefault();
 				if (_checkMove(this.state.currentLevel, direction)) {
 					newLevel = _move(this.state.initialLevel, this.state.currentLevel, direction);
+		    		if (_isLevelFinished(newLevel)) {
+		    			newMessage = "Level finished";
+		    		}
 		    		if (newLevel !== undefined) {
-						this.setState({currentLevel: newLevel}, function()  {
+		    			this.setState({
+							mainMessage: newMessage,
+							currentLevel: newLevel
+						}, function()  {
 							// state changed
 						}.bind(this));	    			
 		    		}
@@ -180,13 +202,18 @@
 			};
 	    },
 	    componentWillMount: function() {
-	    	if (this.props !== undefined && this.props.level !== undefined) {
-	    		this.setState({currentLevel: this.props.level, initialLevel: this.props.level});
-	    	}
+	    	if (this.props !== undefined) {
+	    		if (this.props.level !== undefined) {
+		    		this.setState({currentLevel: this.props.level, initialLevel: this.props.level});
+		    	}
+		    	if (this.props.message !== undefined) {
+		    		this.setState({mainMessage: message})
+		    	}
+		    }
 	    },
 	    render: function() {
 	        var result = undefined, tile = undefined, rowIndex = undefined, colIndex = undefined,
-	        	levelRow = undefined, tileType = undefined;
+	        	levelRow = undefined, tileType = undefined, mainMessage = undefined;
 	        var currentLevel = this.state.currentLevel;
 	        var boardDim = _getBoardDim(currentLevel);
 	    	var tileDim = _getTileDim(currentLevel);
@@ -207,6 +234,10 @@
 					createParams.push(tile);
 				};
 	        };
+	        if (this.state.mainMessage !== undefined) {
+		        mainMessage = React.createElement("div", { "className": "main-message" }, this.state.mainMessage);	        	
+		        createParams.push(mainMessage);
+	        }
 	        result = React.createElement.apply(this, createParams);
 	        return result;
 	    }
