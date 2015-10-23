@@ -3,6 +3,8 @@
 (function () {
 	var BASE_URL = "http://grafmik.com/files/other/sokoban-levels/";
 
+	var WELCOME_MESSAGE = "React Sokoban - Keys : IJKL:Move R:Reload Level N:Next Level - Click to close";
+
 	var TILE_HERO = "@";
 	var TILE_HERO_TARGET = "+";
 	var TILE_CARTON = "$";
@@ -167,7 +169,7 @@
 		var parser = new DOMParser();
 		var xmlDoc = parser.parseFromString(levelRawData, "text/xml");
 		var levelDOMElements = xmlDoc.getElementsByTagName("Level");
-		for (levelIndex = levelDOMElements.length - 1; levelIndex >= 0; levelIndex--) {
+		for (levelIndex = 0; levelIndex < levelDOMElements.length; levelIndex++) {
 			levelDOMElement = levelDOMElements[levelIndex];
 			level = {
 				id: levelDOMElement.getAttribute("Id"),
@@ -176,7 +178,7 @@
 				data: []
 			};
 			levelRowDOMElements = levelDOMElement.getElementsByTagName("L");
-			for (levelRowIndex = levelRowDOMElements.length - 1; levelRowIndex >= 0; levelRowIndex--) {
+			for (levelRowIndex = 0; levelRowIndex < levelRowDOMElements.length; levelRowIndex++) {
 				levelRowDOMElement = levelRowDOMElements[levelRowIndex];
 				levelRow = levelRowDOMElement.childNodes[0].nodeValue;
 				level.data.push(levelRow);
@@ -191,8 +193,7 @@
 	    _setLevel: function(level, isInitial) {
     		if (level !== undefined) {
     			if (isInitial) {
-    				this.setState({mainMessage: "Level is : " + level.id
-    					+ " - " + this.state.mainMessage});
+    				this.setState({mainMessage: WELCOME_MESSAGE + " - Level is : " + level.id});
 	    			level["initialData"] = level.data.slice();
     			}
 	    		this.setState({level: level});
@@ -204,7 +205,9 @@
 			console.log("GET " + url);
 			$.get(url).done(function(data) {
 				var levels = _getNextLevelsFromRawXML(data);
+				console.log("levels found : " + levels.length);
 				var levelNb = 0;
+				console.log(levels[levelNb]);
 				this._setLevel(levels[levelNb], true);
 				this.setState({levels: levels, levelNb: levelNb, levelFileNb: newLevelFileNb});	    	
 			}.bind(this)).fail(function() {
@@ -219,7 +222,7 @@
 		_loadNextLevel: function() {
 			var newLevelNb = this.state.levelNb + 1;
 			if (this.state.levels[this.state.levelNb] !== undefined) {
-				this._setLevel(levels[newLevelNb], true);
+				this._setLevel(this.state.levels[newLevelNb], true);
 				this.setState({levelNb: newLevelNb});
 			} else {
 				this._loadNextLevels;
@@ -238,8 +241,10 @@
 					newLevel = this.state.level;
 					newLevel.data = newLevel.initialData.slice();
 					this._setLevel(newLevel);
+				} else if (e.key === 'n') {
+					this._loadNextLevel();
 				} else {
-					this.setState({mainMessage: "Keys : IJKL:Move R:Reload Level"});
+					this.setState({mainMessage: WELCOME_MESSAGE});
 				}
 			} else {
 				if (_checkMove(this.state.level, direction)) {
@@ -258,7 +263,7 @@
 		getInitialState: function() {
 			return {
 			    levelFileNb: 0,
-			    mainMessage: "IJKL>Move R>Reload level - Click here to close"
+			    mainMessage: WELCOME_MESSAGE
 			};
 	    },
 	    componentDidMount: function() {
