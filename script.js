@@ -71,15 +71,13 @@
     };
 
     var _setLevelChar = function(level, position, chr) {
-    	var result = level;
     	var levelData = level.data;
     	var levelRow = levelData[position.y];
     	var levelRowArray = levelRow.split("");
     	levelRowArray[position.x] = chr;
     	levelRow = levelRowArray.join("");
     	levelData[position.y] = levelRow;
-    	result.data = levelData;
-    	return result;
+    	level.data = levelData;
     };
 
     var _isTargetChar = function(chr) {
@@ -96,40 +94,38 @@
     	return result;
     };
 
-    var _move = function(initialLevel, level, direction) {
+    var _move = function(level, direction) {
     	var initialChar = undefined, newInitialChar = undefined,
     	heroDest = undefined, newHeroDest = undefined, initialNewHeroDest = undefined,
     	newCartonPosition = undefined, newCartonDest = undefined,
     	initialNewCartonDest = undefined;
-    	var result = level;
     	var heroPosition = _getHeroPosition(level);
     	var newHeroPosition = _newPosition(heroPosition, direction);
     	heroDest = _getLevelChar(level, newHeroPosition);
     	if (heroDest === TILE_CARTON || heroDest === TILE_CARTON_TARGET) {
     		newCartonPosition = _newPosition(newHeroPosition, direction);
-	    	initialNewCartonDest = _getLevelChar(initialLevel, newCartonPosition);
+	    	initialNewCartonDest = _getLevelChar(level, newCartonPosition);
 	    	if (_isTargetChar(initialNewCartonDest)) {
 	    		newCartonDest = TILE_CARTON_TARGET;
 	    	} else {
 	    		newCartonDest = TILE_CARTON;
 	    	}
-	    	result = _setLevelChar(result, newCartonPosition, newCartonDest);
+	    	_setLevelChar(level, newCartonPosition, newCartonDest);
     	}
-    	initialChar = _getLevelChar(initialLevel, heroPosition);
+    	initialChar = _getLevelChar(level, heroPosition);
     	if (_isTargetChar(initialChar)) {
     		newInitialChar = TILE_TARGET;
     	} else {
     		newInitialChar = TILE_NIL;
     	}
-    	result = _setLevelChar(result, heroPosition, newInitialChar);
-    	initialNewHeroDest = _getLevelChar(initialLevel, newHeroPosition);
+    	_setLevelChar(level, heroPosition, newInitialChar);
+    	initialNewHeroDest = _getLevelChar(level, newHeroPosition);
     	if (_isTargetChar(initialNewHeroDest)) {
     		newHeroDest = TILE_HERO_TARGET;
     	} else {
     		newHeroDest = TILE_HERO;
     	}
-    	result = _setLevelChar(result, newHeroPosition, newHeroDest);
-		return result;
+    	_setLevelChar(level, newHeroPosition, newHeroDest);
     };
 
     var _checkMove = function(level, direction) {
@@ -192,6 +188,14 @@
 
 	var Game = React.createClass({
 	    displayName: 'React Sokoban',
+	    _setLevel: function(level, isInitial) {
+    		if (level !== undefined) {
+    			if (isInitial) {
+	    			level["initialData"] = level.data.slice();
+    			}
+	    		this.setState({level: level});
+	    	}
+	    },
 		_loadNextLevels: function() {
 			var newLevelFileNb = this.state.levelFileNb + 1;
 			var url = BASE_URL + newLevelFileNb + ".slc";
@@ -199,8 +203,8 @@
 			$.get(url).done(function(data) {
 				var levels = _getNextLevelsFromRawXML(data);
 				var levelNb = 0;
-				this.setState({initialLevel: levels[levelNb], currentLevel: levels[levelNb],
-					levels: levels, levelNb: 0, levelFileNb: newLevelFileNb});
+				this._setLevel(levels[levelNb], true);
+				this.setState({levels: levels, levelNb: levelNb, levelFileNb: newLevelFileNb});	    	
 			}.bind(this)).fail(function() {
 				console.log("Failed to load level file");
 				if (this.state.levelFileNb > 1) {
@@ -213,8 +217,8 @@
 		_loadNextLevel: function() {
 			var newLevelNb = this.state.levelNb + 1;
 			if (this.state.levels[this.state.levelNb] !== undefined) {
-				this.setState({initialLevel: levels[newLevelNb], currentLevel: levels[newLevelNb],
-					levelNb: newLevelNb});
+				this._setLevel(levels[newLevelNb], true);
+				this.setState({levelNb: newLevelNb});
 			} else {
 				this._loadNextLevels;
 			}
@@ -226,22 +230,26 @@
 			var newLevel = undefined;
 			var newMessage = undefined;
 			var direction = _directions[e.key];
+			e.preventDefault();
 			if (direction === undefined) {
-				this.setState({mainMessage: "Keys : IJKL"})
+				if (e.key === 'r') {
+					console.log("Level reload");
+					newLevel = this.state.level;
+					newLevel.data = newLevel.initialData;
+					this._setLevel(newLevel);
+				} else {
+					this.setState({mainMessage: "Keys : IJKL:Move R:Reload Level"});
+				}
 			} else {
-				e.preventDefault();
-				if (_checkMove(this.state.currentLevel, direction)) {
-					newLevel = _move(this.state.initialLevel, this.state.currentLevel, direction);
+				if (_checkMove(this.state.level, direction)) {
+					_move(this.state.level, direction);
+					newLevel = this.state.level;
 		    		if (_isLevelFinished(newLevel)) {
 		    			newMessage = "Level finished";
 		    		}
 		    		if (newLevel !== undefined) {
-		    			this.setState({
-							mainMessage: newMessage,
-							currentLevel: newLevel
-						}, function()  {
-							// state changed
-						}.bind(this));	    			
+		    			this._setLevel(newLevel);
+		    			this.setState({mainMessage: newMessage});	    			
 		    		}
 				};
 			}
@@ -249,19 +257,17 @@
 		getInitialState: function() {
 			return {
 			    levelFileNb: 0,
-			    mainMessage: "Hi! Please click on the game first. Then, use IJKL keys to play"
+			    mainMessage: "IJKL>Move R>Reload level - Click here to close"
 			};
 	    },
 	    componentDidMount: function() {
-	    	if (this.state.currentLevel === undefined) {
+	    	if (this.state.level === undefined) {
 				this._loadNextLevels();
 	    	}
 		},
 	    componentWillMount: function() {
 	    	if (this.props !== undefined) {
-	    		if (this.props.level !== undefined) {
-		    		this.setState({currentLevel: this.props.level, initialLevel: this.props.level});
-		    	}
+	    		this._setLevel(this.props.level, true);
 		    	if (this.props.message !== undefined) {
 		    		this.setState({mainMessage: this.props.message})
 		    	}
@@ -274,7 +280,7 @@
 	        var result = undefined, tile = undefined, rowIndex = undefined, colIndex = undefined,
 	        	levelRow = undefined, tileType = undefined, mainMessage = undefined,
 	        	tileDim = undefined, heroPosition = undefined;
-	        var level = this.state.currentLevel;
+	        var level = this.state.level;
 	        var createParams = ["div", {
 	            className: "game",
 	            tabIndex: 1,
@@ -304,8 +310,10 @@
 	    }
 	});
 
+	var initialFileNb = 4; // Math.floor(Math.random() * 457)
+
 	ReactDOM.render(
-	    React.createElement(Game, {levelFileNb: Math.floor(Math.random() * 457)}),
+	    React.createElement(Game, {levelFileNb: initialFileNb}),
 	    document.getElementById('game')
 	);
 })(this);
