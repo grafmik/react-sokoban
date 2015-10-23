@@ -310,7 +310,7 @@
 	    }
 	});
 
-	var initialFileNb = 4; // Math.floor(Math.random() * 457)
+	var initialFileNb = Math.floor(Math.random() * 457);
 
 	ReactDOM.render(
 	    React.createElement(Game, {levelFileNb: initialFileNb}),

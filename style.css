@@ -18,13 +18,11 @@ html, body {
 }
 
 .hero {
-	background-color: white;
-	border: solid 10px #093;
+	background-color: #093;
 }
 
 .hero-target {
-	background-color: #F93;
-	border: solid 8px #062;
+	background-color: #6D1;
 }
 
 .carton {
