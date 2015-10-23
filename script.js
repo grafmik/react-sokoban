@@ -1,12 +1,14 @@
 "use strict";
 
 (function () {
-	var TILE_HERO = "H";
-	var TILE_HERO_TARGET = "I";
-	var TILE_CARTON = "O";
-	var TILE_CARTON_TARGET = "P";
+	var BASE_URL = "http://grafmik.com/files/other/sokoban-levels/";
+
+	var TILE_HERO = "@";
+	var TILE_HERO_TARGET = "+";
+	var TILE_CARTON = "$";
+	var TILE_CARTON_TARGET = "*";
 	var TILE_TARGET = ".";
-	var TILE_WALL = "X";
+	var TILE_WALL = "#";
 	var TILE_NIL = " ";
 
 	var TILE_CSS = {};
@@ -18,27 +20,25 @@
 	TILE_CSS[TILE_WALL] = "wall";
 	TILE_CSS[TILE_NIL] = "";
 
-	var _getBoardDim = function(level) {
-    	var levelRows = level.split("\n");
-		return {
-			x: levelRows[0].length,
-			y: levelRows.length
+	var _getTileCSS = function(tileType) {
+		var result = "";
+		if (tileType !== undefined) {
+			result = TILE_CSS[tileType];
 		}
+		return result;
 	};
 
 	var _getTileDim = function(level) {
-    	var levelRows = level.split("\n");
 		return {
-			x: Math.min(10, 100 / levelRows[0].length),
-			y: Math.min(10, 100 / levelRows.length)
+			x: Math.min(10, 100 / level.x),
+			y: Math.min(10, 100 / level.y)
 		}
 	};
 
     var _getHeroPosition = function(level) {
     	var levelRow = undefined, rowIndex = undefined, colIndex = undefined;
-    	var levelRows = level.split("\n");
-        for (rowIndex = levelRows.length - 1; rowIndex >= 0; rowIndex--) {
-        	levelRow = levelRows[rowIndex];
+        for (rowIndex = level.data.length - 1; rowIndex >= 0; rowIndex--) {
+        	levelRow = level.data[rowIndex];
         	colIndex = Math.max(levelRow.indexOf(TILE_HERO), levelRow.indexOf(TILE_HERO_TARGET));
         	if (colIndex >= 0) {
         		return {x:colIndex, y:rowIndex};
@@ -48,9 +48,8 @@
 
     var _isLevelFinished = function(level) {
     	var levelRow = undefined, rowIndex = undefined, colIndex = undefined;
-    	var levelRows = level.split("\n");
-        for (rowIndex = levelRows.length - 1; rowIndex >= 0; rowIndex--) {
-        	levelRow = levelRows[rowIndex];
+        for (rowIndex = level.data.length - 1; rowIndex >= 0; rowIndex--) {
+        	levelRow = level.data[rowIndex];
         	colIndex = levelRow.indexOf(TILE_CARTON);
         	if (colIndex >= 0) {
         		return false;
@@ -67,20 +66,19 @@
     };
 
     var _isOutOfBounds = function(level, position) {
-    	var boardDim = _getBoardDim(level);
-    	return position.x === -1 || position.x === boardDim.x
-    		|| position.y === -1 || position.y === boardDim.y;
+    	return position.x === -1 || position.x === level.x
+    		|| position.y === -1 || position.y === level.y;
     };
 
     var _setLevelChar = function(level, position, chr) {
     	var result = level;
-    	var levelRows = level.split("\n");
-    	var levelRow = levelRows[position.y];
+    	var levelData = level.data;
+    	var levelRow = levelData[position.y];
     	var levelRowArray = levelRow.split("");
     	levelRowArray[position.x] = chr;
     	levelRow = levelRowArray.join("");
-    	levelRows[position.y] = levelRow;
-    	result = levelRows.join("\n");
+    	levelData[position.y] = levelRow;
+    	result.data = levelData;
     	return result;
     };
 
@@ -92,8 +90,7 @@
 
     var _getLevelChar = function(level, position) {
     	var result = undefined;
-    	var levelRows = level.split("\n");
-    	var levelRow = levelRows[position.y];
+    	var levelRow = level.data[position.y];
     	var levelRowArray = levelRow.split("");
     	result = levelRowArray[position.x];
     	return result;
@@ -166,12 +163,69 @@
     	'l': {x:1, y:0}
     };
 
+    var _getNextLevelsFromRawXML = function(levelRawData) {
+    	var result = [];
+		var levelDOMElements = undefined, levelDOMElement = undefined, levelIndex = undefined;
+		var levelRowDOMElements = undefined, levelRowDOMElement = undefined, levelRowIndex = undefined;
+		var levelRow = undefined, level = undefined;
+		var parser = new DOMParser();
+		var xmlDoc = parser.parseFromString(levelRawData, "text/xml");
+		var levelDOMElements = xmlDoc.getElementsByTagName("Level");
+		for (levelIndex = levelDOMElements.length - 1; levelIndex >= 0; levelIndex--) {
+			levelDOMElement = levelDOMElements[levelIndex];
+			level = {
+				id: levelDOMElement.getAttribute("Id"),
+				x: levelDOMElement.getAttribute("Width"),
+				y: levelDOMElement.getAttribute("Height"),
+				data: []
+			};
+			levelRowDOMElements = levelDOMElement.getElementsByTagName("L");
+			for (levelRowIndex = levelRowDOMElements.length - 1; levelRowIndex >= 0; levelRowIndex--) {
+				levelRowDOMElement = levelRowDOMElements[levelRowIndex];
+				levelRow = levelRowDOMElement.childNodes[0].nodeValue;
+				level.data.push(levelRow);
+			};
+			result.push(level);
+		};
+		return result;
+    };
+
 	var Game = React.createClass({
 	    displayName: 'React Sokoban',
-		_onFilterKeyPress: function(e) {
+		_loadNextLevels: function() {
+			var newLevelFileNb = this.state.levelFileNb + 1;
+			var url = BASE_URL + newLevelFileNb + ".slc";
+			console.log("GET " + url);
+			$.get(url).done(function(data) {
+				var levels = _getNextLevelsFromRawXML(data);
+				var levelNb = 0;
+				this.setState({initialLevel: levels[levelNb], currentLevel: levels[levelNb],
+					levels: levels, levelNb: 0, levelFileNb: newLevelFileNb});
+			}.bind(this)).fail(function() {
+				console.log("Failed to load level file");
+				if (this.state.levelFileNb > 1) {
+					console.log("Starting from level file number : zero");
+					this.setState({levelFileNb: 0});
+					this._loadNextLevels();
+				}
+			}.bind(this));
+		},
+		_loadNextLevel: function() {
+			var newLevelNb = this.state.levelNb + 1;
+			if (this.state.levels[this.state.levelNb] !== undefined) {
+				this.setState({initialLevel: levels[newLevelNb], currentLevel: levels[newLevelNb],
+					levelNb: newLevelNb});
+			} else {
+				this._loadNextLevels;
+			}
+		},
+		_onClick: function(e) {
+			this.setState({mainMessage: undefined});
+		},
+		_onKeyPress: function(e) {
 			var newLevel = undefined;
-			var direction = _directions[e.key];
 			var newMessage = undefined;
+			var direction = _directions[e.key];
 			if (direction === undefined) {
 				this.setState({mainMessage: "Keys : IJKL"})
 			} else {
@@ -192,51 +246,55 @@
 				};
 			}
 		},
-	    getInitialState: function() {
-			// impossible level - this should always been overriden by props
-			var impossibleLevel = "" +
-			    "OX.\n" +
-			    "XHX\n" +
-			    ".XO"
+		getInitialState: function() {
 			return {
-				initialLevel: impossibleLevel,
-				currentLevel: impossibleLevel,
+			    levelFileNb: 0,
 			    mainMessage: "Hi! Please click on the game first. Then, use IJKL keys to play"
 			};
 	    },
+	    componentDidMount: function() {
+	    	if (this.state.currentLevel === undefined) {
+				this._loadNextLevels();
+	    	}
+		},
 	    componentWillMount: function() {
 	    	if (this.props !== undefined) {
 	    		if (this.props.level !== undefined) {
 		    		this.setState({currentLevel: this.props.level, initialLevel: this.props.level});
 		    	}
 		    	if (this.props.message !== undefined) {
-		    		this.setState({mainMessage: message})
+		    		this.setState({mainMessage: this.props.message})
+		    	}
+		    	if (this.props.levelFileNb !== undefined) {
+		    		this.setState({levelFileNb: this.props.levelFileNb})
 		    	}
 		    }
 	    },
 	    render: function() {
 	        var result = undefined, tile = undefined, rowIndex = undefined, colIndex = undefined,
-	        	levelRow = undefined, tileType = undefined, mainMessage = undefined;
-	        var currentLevel = this.state.currentLevel;
-	        var boardDim = _getBoardDim(currentLevel);
-	    	var tileDim = _getTileDim(currentLevel);
-	    	var heroPosition = _getHeroPosition(currentLevel);
-	    	var levelRows = currentLevel.split("\n");
+	        	levelRow = undefined, tileType = undefined, mainMessage = undefined,
+	        	tileDim = undefined, heroPosition = undefined;
+	        var level = this.state.currentLevel;
 	        var createParams = ["div", {
 	            className: "game",
 	            tabIndex: 1,
-	            onKeyPress: this._onFilterKeyPress
+	            onKeyPress: this._onKeyPress,
+	            onClick: this._onClick
 	        }];
-	        for (rowIndex = levelRows.length - 1; rowIndex >= 0; rowIndex--) {
-	        	levelRow = levelRows[rowIndex];
-				for (colIndex = levelRow.length - 1; colIndex >= 0; colIndex--) {
-					tileType = levelRow[colIndex];
-					tile = React.createElement("div", { "className": "tile " + TILE_CSS[tileType],
-						style: {left:(tileDim.x*colIndex)+"%",top:(tileDim.y*rowIndex)+"%",
-						width: tileDim.x+"%",height: tileDim.y+"%"} });
-					createParams.push(tile);
-				};
-	        };
+	        if (level !== undefined) {
+		    	var tileDim = _getTileDim(level);
+		    	var heroPosition = _getHeroPosition(level);
+		        for (rowIndex = level.data.length - 1; rowIndex >= 0; rowIndex--) {
+		        	levelRow = level.data[rowIndex];
+					for (colIndex = levelRow.length - 1; colIndex >= 0; colIndex--) {
+						tileType = levelRow[colIndex];
+						tile = React.createElement("div", { "className": "tile " + _getTileCSS(tileType),
+							style: {left:(tileDim.x*colIndex)+"%",top:(tileDim.y*rowIndex)+"%",
+							width: tileDim.x+"%",height: tileDim.y+"%"} });
+						createParams.push(tile);
+					};
+		        };
+	        }
 	        if (this.state.mainMessage !== undefined) {
 		        mainMessage = React.createElement("div", { "className": "main-message" }, this.state.mainMessage);	        	
 		        createParams.push(mainMessage);
@@ -246,19 +304,8 @@
 	    }
 	});
 
-	var level = "" +
-	    "  XXXXX \n" +
-	    "XXX   X \n" +
-	    "X.HO  X \n" +
-	    "XXX O.X \n" +
-	    "X.XXO X \n" +
-	    "X X . XX\n" +
-	    "XO OPO.X\n" +
-	    "X   .  X\n" +
-	    "XXXXXXXX\n";
-
 	ReactDOM.render(
-	    React.createElement(Game, {level: level}),
+	    React.createElement(Game, {levelFileNb: Math.floor(Math.random() * 457)}),
 	    document.getElementById('game')
 	);
 })(this);
