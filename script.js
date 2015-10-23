@@ -207,7 +207,6 @@
 				var levels = _getNextLevelsFromRawXML(data);
 				console.log("levels found : " + levels.length);
 				var levelNb = 0;
-				console.log(levels[levelNb]);
 				this._setLevel(levels[levelNb], true);
 				this.setState({levels: levels, levelNb: levelNb, levelFileNb: newLevelFileNb});	    	
 			}.bind(this)).fail(function() {
@@ -221,11 +220,11 @@
 		},
 		_loadNextLevel: function() {
 			var newLevelNb = this.state.levelNb + 1;
-			if (this.state.levels[this.state.levelNb] !== undefined) {
+			if (this.state.levels[newLevelNb] !== undefined) {
 				this._setLevel(this.state.levels[newLevelNb], true);
 				this.setState({levelNb: newLevelNb});
 			} else {
-				this._loadNextLevels;
+				this._loadNextLevels();
 			}
 		},
 		_onClick: function(e) {
@@ -236,28 +235,32 @@
 			var newMessage = undefined;
 			var direction = _directions[e.key];
 			e.preventDefault();
-			if (direction === undefined) {
-				if (e.key === 'r') {
-					newLevel = this.state.level;
-					newLevel.data = newLevel.initialData.slice();
-					this._setLevel(newLevel);
-				} else if (e.key === 'n') {
-					this._loadNextLevel();
-				} else {
-					this.setState({mainMessage: WELCOME_MESSAGE});
-				}
+			if (_isLevelFinished(this.state.level)) {
+				this._loadNextLevel();
 			} else {
-				if (_checkMove(this.state.level, direction)) {
-					_move(this.state.level, direction);
-					newLevel = this.state.level;
-		    		if (_isLevelFinished(newLevel)) {
-		    			newMessage = "Level finished";
-		    		}
-		    		if (newLevel !== undefined) {
-		    			this._setLevel(newLevel);
-		    			this.setState({mainMessage: newMessage});	    			
-		    		}
-				};
+				if (direction === undefined) {
+					if (e.key === 'r') {
+						newLevel = this.state.level;
+						newLevel.data = newLevel.initialData.slice();
+						this._setLevel(newLevel);
+					} else if (e.key === 'n') {
+						this._loadNextLevel();
+					} else {
+						this.setState({mainMessage: WELCOME_MESSAGE});
+					}
+				} else {
+					if (_checkMove(this.state.level, direction)) {
+						_move(this.state.level, direction);
+						newLevel = this.state.level;
+			    		if (_isLevelFinished(newLevel)) {
+			    			newMessage = "Level finished";
+			    		}
+			    		if (newLevel !== undefined) {
+			    			this._setLevel(newLevel);
+			    			this.setState({mainMessage: newMessage});	    			
+			    		}
+					};
+				}				
 			}
 		},
 		getInitialState: function() {
