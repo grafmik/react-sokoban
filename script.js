@@ -233,9 +233,8 @@
 			e.preventDefault();
 			if (direction === undefined) {
 				if (e.key === 'r') {
-					console.log("Level reload");
 					newLevel = this.state.level;
-					newLevel.data = newLevel.initialData;
+					newLevel.data = newLevel.initialData.slice();
 					this._setLevel(newLevel);
 				} else {
 					this.setState({mainMessage: "Keys : IJKL:Move R:Reload Level"});
