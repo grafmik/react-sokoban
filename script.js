@@ -191,6 +191,8 @@
 	    _setLevel: function(level, isInitial) {
     		if (level !== undefined) {
     			if (isInitial) {
+    				this.setState({mainMessage: "Level is : " + level.id
+    					+ " - " + this.state.mainMessage});
 	    			level["initialData"] = level.data.slice();
     			}
 	    		this.setState({level: level});
